@@ -1,13 +1,178 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>My Digital PRO</title>
+    <title>MyDigitalPRO</title>
     <description></description>
-    <link>http://mdtlpr.com/blog/blog/</link>
-    <atom:link href="http://mdtlpr.com/blog/blog/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Thu, 17 Jul 2014 02:38:01 +0400</pubDate>
-    <lastBuildDate>Thu, 17 Jul 2014 02:38:01 +0400</lastBuildDate>
-    <generator>Jekyll v2.1.1</generator>
+    <link>http://mdtlpr.com//blog/</link>
+    <atom:link href="http://mdtlpr.com//blog/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Wed, 10 Dec 2014 09:22:58 +0300</pubDate>
+    <lastBuildDate>Wed, 10 Dec 2014 09:22:58 +0300</lastBuildDate>
+    <generator>Jekyll v2.5.2</generator>
+    
+      <item>
+        <title>Concurrency не параллелизм</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;Теория&lt;/h2&gt;
+
+&lt;p&gt;Concurrency - это о том как справляться с многими вещами одновременно.&lt;/p&gt;
+
+&lt;p&gt;Параллелизм - о том как делать много вещей одновременно.&lt;/p&gt;
+
+&lt;p&gt;Не одно и то же, но связанно&lt;/p&gt;
+
+&lt;p&gt;Concurrency - это о структуре, параллелизм о исполнении.&lt;/p&gt;
+
+&lt;p&gt;Concurrency - это путь организации решения проблемы, который может (но не обязан) быть распараллелен.&lt;/p&gt;
+
+&lt;p&gt;Concurrency - способ разбить программу на мелкие куски, которые могут выполняться независимо.&lt;/p&gt;
+
+&lt;p&gt;Коммуникация - способ координировать независимое выполнение.&lt;/p&gt;
+
+&lt;p&gt;Модель Go (так же как и Erlang и другие) основана на CSP (C. A. R. Hoare: Communicating Sequential Processes (CACM 1978))&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;Суслики&lt;/h2&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;Задача&lt;/h3&gt;
+
+&lt;p&gt;Перенести кучу устаревших мануалов в мусоросжигатель.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophersimple1.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Один суслик будет заниматься этим очень долго.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophersimple3.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Добавление суслика не решает проблему, нужно больше тележек.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophersimple2.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Так будет быстрее, но появляются узкие места у кучи и мусоросжигателя. Также необходимо синхронизировать сусликов.&lt;/p&gt;
+
+&lt;p&gt;Уберем узкие места&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophersimple4.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Это будет работать в 2 раза быстрее.&lt;/p&gt;
+
+&lt;p&gt;Это concurrent composition двух сусликов.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-3&quot;&gt;Согласованная композиция&lt;/h3&gt;
+
+&lt;p&gt;Этот дизайн не является автоматически параллельным.&lt;/p&gt;
+
+&lt;p&gt;Что если только один суслик перемещается в один момент времени?&lt;/p&gt;
+
+&lt;p&gt;Concurrency остается (она заложена в дизайн), просто не параллельна.&lt;/p&gt;
+
+&lt;p&gt;Тем не менее композиция попрежнему может быть распараллелена.&lt;/p&gt;
+
+&lt;p&gt;Более того согласованная композиция предлагает другие модели.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-4&quot;&gt;Другой дизайн&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex0.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Три суслика в действии, но скорее всего с задержками. Каждый суслик - независимо выполняемая процедура плюс коммуникация(координация).&lt;/p&gt;
+
+&lt;h3 id=&quot;concurrency&quot;&gt;Более четкая concurrency&lt;/h3&gt;
+
+&lt;p&gt;Добавим еще одного суслика для возврата пустых тележек.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex1.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Четыре суслика в действии, каждый делает одно простое задание. &lt;/p&gt;
+
+&lt;p&gt;Если мы устроили все правильно (вряд ли, но не невозможно), это будет в 4 раза быстрее чем наш первый односуликовый дизайн.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-5&quot;&gt;Подытог&lt;/h3&gt;
+
+&lt;p&gt;Мы улучшили производительность добавив concurrent процедуру к существующему дизайну.&lt;/p&gt;
+
+&lt;p&gt;Больше сусликов делают больше работы.&lt;/p&gt;
+
+&lt;p&gt;Это более глубокое понимание, чем простой параллелизм.&lt;/p&gt;
+
+&lt;h3 id=&quot;concurrent-procedures&quot;&gt;Concurrent procedures&lt;/h3&gt;
+
+&lt;p&gt;Четыре отдельных суслико-процедуры:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Загрузить книги в тележку&lt;/li&gt;
+  &lt;li&gt;Доставить тележку к мусоросжигателю&lt;/li&gt;
+  &lt;li&gt;Выгрузить книги&lt;/li&gt;
+  &lt;li&gt;Вернуть пустую тележку&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Различные согласованные дизайны позволяют по-разному распараллеливать.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-6&quot;&gt;Больше параллельности!&lt;/h3&gt;
+
+&lt;p&gt;Теперь мы можем распараллеливать в новом измерении, concurrent design позволяет делать это просто. Восемь сусликов, все при деле.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex2.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-7&quot;&gt;Или полное отсутствие параллельного исполнения&lt;/h3&gt;
+
+&lt;p&gt;Не забывайте, даже если только один суслик активен в один момент времени, это по-прежнему верное и concurrent решение&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex2.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-8&quot;&gt;Еще один дизайн&lt;/h3&gt;
+
+&lt;p&gt;Вот еще один способ структурировать проблему в виде согласованной композиции суслико-процедур.&lt;/p&gt;
+
+&lt;p&gt;Два суслика плюс временная куча.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex3.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-9&quot;&gt;Параллелим как обычно&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex4.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-10&quot;&gt;Или немного другим способом&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/blog/images/2014/gophercomplex5.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-11&quot;&gt;Полная оптимизация&lt;/h3&gt;
+
+&lt;p&gt;Используем все подходы. 16 сусликов за работой!
+&lt;img src=&quot;/blog/images/2014/gophercomplex6.jpg&quot; alt=&quot;Concurrency не параллелизм&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-12&quot;&gt;Уроки&lt;/h3&gt;
+
+&lt;p&gt;Есть много способов расчленить обработку.&lt;/p&gt;
+
+&lt;p&gt;Это concurrent design.&lt;/p&gt;
+
+&lt;p&gt;После того того как мы расчленили задачу, распраралеливание происходит просто само собой.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-13&quot;&gt;Вернёмся к компьютерам&lt;/h3&gt;
+
+&lt;p&gt;В нашей задаче на транспортировку книг заменим:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;кучу книг - веб-контент&lt;/li&gt;
+  &lt;li&gt;суслик - CPU&lt;/li&gt;
+  &lt;li&gt;тележка - сортировка, рендеринг, работа с сетью&lt;/li&gt;
+  &lt;li&gt;мусоросжигатель - прокси, броузер, или другой потребитель&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Наша задача превращается в согласованный дизайн для масштабируемых веб-сервисов. Суслики обслуживают веб-контент.&lt;/p&gt;
+
+&lt;h3 id=&quot;section-14&quot;&gt;Ссылки&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://blog.golang.org/concurrency-is-not-parallelism&quot;&gt;Блогозапись&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://talks.golang.org/2012/waza.slide&quot;&gt;Слайды&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Wed, 10 Dec 2014 03:00:00 +0300</pubDate>
+        <link>http://mdtlpr.com//blog/2014-12-10/concurrency-is-not-parallelism.html</link>
+        <guid isPermaLink="true">http://mdtlpr.com//blog/2014-12-10/concurrency-is-not-parallelism.html</guid>
+        
+        
+        <category>ruby</category>
+        
+      </item>
     
       <item>
         <title>А вы знаете Ruby?</title>
@@ -287,8 +452,8 @@ Mayra Kerluke DDS,Marvin Lynch,sydni.schuppe@schuster.com,Incredible Steel Glove
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 12 Jul 2014 23:49:00 +0400</pubDate>
-        <link>http://mdtlpr.com/blog/blog/2014-07-12/know-ruby.html</link>
-        <guid isPermaLink="true">http://mdtlpr.com/blog/blog/2014-07-12/know-ruby.html</guid>
+        <link>http://mdtlpr.com//blog/2014-07-12/know-ruby.html</link>
+        <guid isPermaLink="true">http://mdtlpr.com//blog/2014-07-12/know-ruby.html</guid>
         
         
         <category>ruby</category>
