@@ -5,9 +5,79 @@
     <description></description>
     <link>http://mdtlpr.com//blog/</link>
     <atom:link href="http://mdtlpr.com//blog/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Wed, 10 Dec 2014 09:22:58 +0300</pubDate>
-    <lastBuildDate>Wed, 10 Dec 2014 09:22:58 +0300</lastBuildDate>
+    <pubDate>Sat, 20 Dec 2014 07:25:41 +0300</pubDate>
+    <lastBuildDate>Sat, 20 Dec 2014 07:25:41 +0300</lastBuildDate>
     <generator>Jekyll v2.5.2</generator>
+    
+      <item>
+        <title>Парсим web в linux shell</title>
+        <description>&lt;p&gt;Иногда нужно пачками собрать какие-то ссылки или сохранить картинки. Каждый раз начиная писать скрипт с нуля, появлялась мысль, что набор команд, которые можно объединять в цепочки, как в bash, был бы очень удобен. И наконец я решил сменить парадигму и освоить парсинг в shell.&lt;/p&gt;
+
+&lt;p&gt;Первое, что нужно знать, hxselect, которые советуют на stackoverflow не работает. Вместо того, чтобы молча парсить, он зачем-то валидирует документ и ругается на ошибки и ничего не отдает (в том числе после hxnormalize). Забыли о нем.&lt;/p&gt;
+
+&lt;p&gt;Для примера мы будем работать с сайтом на котором есть галереи изображений и нам надо сохранить себе несколько последних галерей. Я переписываю этот сайт с нуля и мне нужна была статистика по количеству вертикальных и горизонтальных фотографий, чтобы решить какое заполнения ипользовать - &lt;a href=&quot;http://tympanus.net/Development/GridLoadingEffects/index2.html&quot;&gt;колонками&lt;/a&gt; или &lt;a href=&quot;https://www.google.ru/search?q=nature&amp;amp;tbm=isch&quot;&gt;строками&lt;/a&gt;. Один вариант более выйгрышен для вертикальных изображений, второй для горизонтальных.&lt;/p&gt;
+
+&lt;p&gt;Вот так я могу получить id ста последних галерей:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;for i in {1..5}; do curl &quot;http://www.samara-night.ru/report/page.$i.html&quot; | selector &#39;#content2 h4 a&#39; href &amp;lt; index.html | grep -o &#39;[0-9]\+&#39;; done
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;А вот этим скриптом я могу сохранить изображения из каждой галереи в отдельную папочку (изначально он писался в одну строку, но в процессе я все-таки сохранил его в файл):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#!/bin/bash
+while read id
+do
+  mkdir -p &quot;$id&quot; &amp;amp;&amp;amp; cd &quot;$id&quot; &amp;amp;&amp;amp; echo &quot;http://www.samara-night.ru/altreport/report.$id.html&quot; | xargs -n1 curl -s | selector &#39;.photos a&#39; href | uri_join http://www.samara-night.ru | xargs -P 10 -n1 -I % sh -c &quot;curl -s --cookie &#39;PHPSESSID=...&#39; % | selector &#39;#mainLentaImg&#39; src | uri_join http://www.samara-night.ru | xargs wget&quot; &amp;amp;
+done
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;запускать его можно так:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;./sctipt &amp;lt; ids
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Что тут происходит:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Скрипту на вход подаются id галерей&lt;/li&gt;
+  &lt;li&gt;В текущем каталоге создается папка с id галереи в качестве имени&lt;/li&gt;
+  &lt;li&gt;Переходим в папку&lt;/li&gt;
+  &lt;li&gt;Генерируем на основе id url галереи&lt;/li&gt;
+  &lt;li&gt;curl’ом забираем страницу галереи&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;selector &#39;.photos a&#39; href&lt;/code&gt; из страницы галереи выбираем ссылки на изображения&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;uri_join http://www.samara-night.ru&lt;/code&gt; поскольку ссылки относительные, надо получить полные пути&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;xargs -P 10 -n1 -I % sh -c&lt;/code&gt; полученные ссылки обрабатываем в 10 потоков&lt;/li&gt;
+  &lt;li&gt;Сначала грузим страницу с картинкой, передав куку с сессией (картинки отдаются только зарегистрированным пользователям)&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;selector &#39;#mainLentaImg&#39; src&lt;/code&gt; из нее получаем ссылку на саму картинку&lt;/li&gt;
+  &lt;li&gt;Сохраняем картинку wget’ом&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Скормить скрипту сразу 100 id оказалось плохой идеей я уронил и сайт и свою машину. 25 за раз (25*10=250 потоков) заняло у меня около 4 ГиБ памяти в пике.&lt;/p&gt;
+
+&lt;p&gt;Что такое &lt;code&gt;selector&lt;/code&gt; и &lt;code&gt;uri_join&lt;/code&gt;. Это мои скрипты-утилитки на Ruby, обертки для гемов &lt;code&gt;nokogiri&lt;/code&gt; и &lt;code&gt;uri&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env ruby&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;nokogiri&amp;#39;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Nokogiri&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;HTML&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;STDIN&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;css&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;ARGV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;attr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;ARGV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env ruby&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;uri&amp;#39;&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;STDIN&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;readlines&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;each&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;URI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;ARGV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Результатом я доволен, можно быстро что-то где-то спарсить, протестировать селектор, получать инфу по частям и сохранять ее во временные файлы.&lt;/p&gt;
+
+&lt;p&gt;PS на выборке в 2351 изображений 1592 (67.7%) оказались горизонтальными.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 20 Dec 2014 03:00:00 +0300</pubDate>
+        <link>http://mdtlpr.com//blog/2014-12-20/parsing-web-in-shell.html</link>
+        <guid isPermaLink="true">http://mdtlpr.com//blog/2014-12-20/parsing-web-in-shell.html</guid>
+        
+        
+        <category>ruby</category>
+        
+      </item>
     
       <item>
         <title>Concurrency не параллелизм</title>
